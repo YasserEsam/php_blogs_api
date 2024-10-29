@@ -6,6 +6,9 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/router.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
+
 
 // Get the current request URL
 $request = $_SERVER['REQUEST_URI'];

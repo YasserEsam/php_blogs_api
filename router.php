@@ -1,25 +1,37 @@
 <?php
 
 require_once __DIR__ . '/app/controllers/BlogController.php';
+require_once __DIR__ . '/app/controllers/UserController.php';
 
 class Router {
-    private $controller;
+    private $blogController;
+    private $userController;
 
     public function __construct() {
-        $this->controller = new BlogController();
+        $this->blogController = new BlogController();
+        $this->userController = new UserController();
     }
 
     public function route($request) {
         $requestPath = strtok($request, '?');
-
-        // Update the base path to remove index.php
         $basePath = '/blogs-api';
+
         if (strpos($requestPath, $basePath) === 0) {
             $requestPath = substr($requestPath, strlen($basePath));
         }
 
         if (strpos($requestPath, '/api/blogs') === 0) {
             $this->handleBlogs($requestPath);
+        } elseif ($requestPath === '/api/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->userController->register();
+        } elseif ($requestPath === '/api/login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->userController->login();
+        } elseif (preg_match('/^\/api\/users\/(\d+)$/', $requestPath, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->userController->getUserById($matches[1]);
+        } elseif (preg_match('/^\/api\/users\/username\/(.+)$/', $requestPath, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->userController->getUserByUsername($matches[1]);
+        } elseif ($requestPath === '/api/users' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->userController->getAllUsers();
         } else {
             echo json_encode(['error' => 'API Endpoint Not Found']);
         }
@@ -32,20 +44,20 @@ class Router {
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'GET':
                 if ($id) {
-                    $this->controller->show($id);
+                    $this->blogController->show($id);
                 } else {
-                    $this->controller->index();
+                    $this->blogController->index();
                 }
                 break;
 
             case 'POST':
-                $this->controller->store();
+                $this->blogController->store();
                 break;
 
             case 'PUT':
             case 'PATCH':
                 if ($id) {
-                    $this->controller->update($id);
+                    $this->blogController->update($id);
                 } else {
                     echo json_encode(['error' => 'ID not provided for update']);
                 }
@@ -53,7 +65,7 @@ class Router {
 
             case 'DELETE':
                 if ($id) {
-                    $this->controller->destroy($id);
+                    $this->blogController->destroy($id);
                 } else {
                     echo json_encode(['error' => 'ID not provided for deletion']);
                 }

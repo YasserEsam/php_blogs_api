@@ -40,7 +40,7 @@ class BlogController {
         }
     }
 
-    public function store() {
+    public function store() {   
         $data = json_decode(file_get_contents("php://input"));
 
         if (isset($data->title, $data->content, $data->author)) {
