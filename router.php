@@ -4,12 +4,35 @@ require_once __DIR__ . '/app/controllers/BlogController.php';
 require_once __DIR__ . '/app/controllers/UserController.php';
 
 class Router {
+    private $routes = [];
     private $blogController;
     private $userController;
 
     public function __construct() {
         $this->blogController = new BlogController();
         $this->userController = new UserController();
+
+        $this->registerRoutes();
+    }
+
+    private function registerRoutes() {
+        // Blog routes
+        $this->addRoute('GET', '/api/blogs', [$this->blogController, 'index']);
+        $this->addRoute('POST', '/api/blogs', [$this->blogController, 'store']);
+        $this->addRoute('GET', '/api/blogs/{id}', [$this->blogController, 'show']);
+        $this->addRoute('PUT', '/api/blogs/{id}', [$this->blogController, 'update']);
+        $this->addRoute('DELETE', '/api/blogs/{id}', [$this->blogController, 'destroy']);
+
+        // User routes
+        $this->addRoute('POST', '/api/register', [$this->userController, 'register']);
+        $this->addRoute('POST', '/api/login', [$this->userController, 'login']);
+        $this->addRoute('GET', '/api/users/{id}', [$this->userController, 'getUserById']);
+        $this->addRoute('GET', '/api/users/username/{username}', [$this->userController, 'getUserByUsername']);
+        $this->addRoute('GET', '/api/users', [$this->userController, 'getAllUsers']);
+    }
+
+    private function addRoute($method, $path, $handler) {
+        $this->routes[$method][$path] = $handler;
     }
 
     public function route($request) {
@@ -20,60 +43,23 @@ class Router {
             $requestPath = substr($requestPath, strlen($basePath));
         }
 
-        if (strpos($requestPath, '/api/blogs') === 0) {
-            $this->handleBlogs($requestPath);
-        } elseif ($requestPath === '/api/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->userController->register();
-        } elseif ($requestPath === '/api/login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->userController->login();
-        } elseif (preg_match('/^\/api\/users\/(\d+)$/', $requestPath, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
-            $this->userController->getUserById($matches[1]);
-        } elseif (preg_match('/^\/api\/users\/username\/(.+)$/', $requestPath, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
-            $this->userController->getUserByUsername($matches[1]);
-        } elseif ($requestPath === '/api/users' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-            $this->userController->getAllUsers();
-        } else {
-            echo json_encode(['error' => 'API Endpoint Not Found']);
+        $method = $_SERVER['REQUEST_METHOD'];
+
+        foreach ($this->routes[$method] as $route => $handler) {
+            $routePattern = preg_replace('/\{(\w+)\}/', '(\w+)', $route);
+            $routePattern = str_replace('/', '\/', $routePattern);
+
+            if (preg_match('/^' . $routePattern . '$/', $requestPath, $matches)) {
+                array_shift($matches); // Remove full match from results
+                $this->executeHandler($handler, $matches);
+                return;
+            }
         }
+
+        echo json_encode(['error' => 'API Endpoint Not Found']);
     }
 
-    private function handleBlogs($requestPath) {
-        $parts = explode('/', $requestPath);
-        $id = isset($parts[3]) ? intval($parts[3]) : null;
-
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case 'GET':
-                if ($id) {
-                    $this->blogController->show($id);
-                } else {
-                    $this->blogController->index();
-                }
-                break;
-
-            case 'POST':
-                $this->blogController->store();
-                break;
-
-            case 'PUT':
-            case 'PATCH':
-                if ($id) {
-                    $this->blogController->update($id);
-                } else {
-                    echo json_encode(['error' => 'ID not provided for update']);
-                }
-                break;
-
-            case 'DELETE':
-                if ($id) {
-                    $this->blogController->destroy($id);
-                } else {
-                    echo json_encode(['error' => 'ID not provided for deletion']);
-                }
-                break;
-
-            default:
-                echo json_encode(['error' => 'Request method not supported']);
-                break;
-        }
+    private function executeHandler($handler, $params) {
+        call_user_func_array($handler, $params);
     }
 }

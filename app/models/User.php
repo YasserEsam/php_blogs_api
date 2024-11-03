@@ -17,7 +17,7 @@ class User {
     public function findUserByUsername($username) {
         $query = "SELECT * FROM {$this->table} WHERE username LIKE :username";
         $stmt = $this->conn->prepare($query);
-        $searchTerm = "%{$username}%"; // Allows partial matching
+        $searchTerm = "%{$username}%";
         $stmt->bindParam(':username', $searchTerm);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);

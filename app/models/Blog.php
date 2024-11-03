@@ -1,7 +1,5 @@
 <?php
 
-
-
 class Blog {
     private $conn;
     private $table = 'blogs';
@@ -16,17 +14,8 @@ class Blog {
         $this->conn = $db;
     }
 
-    // Retrieve all blogs with pagination
-    public function getBlogsPaginated($limit, $offset) {
-        $query = "SELECT id, title, content, author, created_at FROM {$this->table} LIMIT :limit OFFSET :offset";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt;
-    }
+  
 
-    // Retrieve a single blog by ID
     public function getBlogById($id) {
         $query = "SELECT id, title, content, author, created_at FROM {$this->table} WHERE id = :id";
         $stmt = $this->conn->prepare($query);
@@ -35,7 +24,15 @@ class Blog {
         return $stmt;
     }
 
-    // Create a new blog
+  public function getBlogsPaginated($limit, $offset) {
+        $query = "SELECT id, title, content, author, created_at FROM {$this->table} LIMIT :limit OFFSET :offset";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt;
+    }
+    
     public function createBlog() {
         $query = "INSERT INTO {$this->table} (title, content, author) VALUES (:title, :content, :author)";
         $stmt = $this->conn->prepare($query);
@@ -51,7 +48,6 @@ class Blog {
         return $stmt->execute();
     }
 
-    // Update an existing blog
     public function updateBlog() {
         $query = "UPDATE {$this->table} SET title = :title, content = :content, author = :author WHERE id = :id";
         $stmt = $this->conn->prepare($query);
@@ -69,7 +65,6 @@ class Blog {
         return $stmt->execute();
     }
 
-    // Delete a blog by ID
     public function deleteBlog() {
         $query = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->conn->prepare($query);
